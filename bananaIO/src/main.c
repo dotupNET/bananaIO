@@ -13,6 +13,7 @@
  */
 int main(int argc, char** argv) {
 
+	RegisterTest();
 	return (EXIT_SUCCESS);
 }
 
