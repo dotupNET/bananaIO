@@ -84,40 +84,18 @@ void SpiConfigure(int address, enum PortDirection portDirection) {
 void Test() {
 
 	Initialize();
-
-	ConfigurePinDirection(PIN23, PinDirectionOutput);
-	WritePinValue(PIN23, 1);
-	WritePinValue(PIN23, 0);
-	WritePinValue(PIN23, 1);
-	
-	newOutput(PIN23);
-	
-	digitalWrite(PIN23, 0);
-	digitalWrite(PIN23, 1);
-	
-	WritePinValue(PIN23,0);
-	WritePinValue(PIN23,1);
-	
-
-	
+		
 	newOutput(PIN_CLOCK);
 	newOutput(PIN_MOSI);
 	newOutput(PIN_MISO);
 	newOutput(PIN_CS);
-	
-/*
-	pinMode(PIN_CLOCK, OUTPUT);
-	pinMode(PIN_CS, OUTPUT);
-	pinMode(PIN_MISO, OUTPUT);
-	pinMode(PIN_MOSI, OUTPUT);
-*/
 
 	SpiConfigure(0, PortDirectionOutput);
 
 	int loopIndex = 0, value = 1;
 	for (loopIndex; loopIndex < 9; loopIndex++) {
 		SpiWrite(0, MCP23S17_REGISTER_PORT_A, value);
-		value = value << 1; // (loopIndex % 2);
+		value = value << 1;
 		sleep(1);
 	}
 

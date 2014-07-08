@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "MCP23S17Example.h"
 
 
 int main(int argc, char** argv) {
