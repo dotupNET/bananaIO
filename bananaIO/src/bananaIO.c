@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
+#include "bananaIO.h"
 
 #define		PAGESIZE					4096
 #define		GPIO_BASE				0x01C20800			// A20 User Manual 2013-03-22.pdf
@@ -13,54 +14,12 @@
 #define		BYTE_PER_REGISTER		4						// All register are 32 Bit
 #define		PORT_SIZE				36						// Number of rows per port to calculate with uint32_t pointer
 
-enum PinPullMode {
-	PinPullModeNone = 0b00,
-	PinPullModeUp = 0b01,
-	PinPullModeDown = 0b10
-};
-
-enum PinDirection {
-	PinDirectionInput = 0b000,
-	PinDirectionOutput = 0b001
-};
-
-enum PortRegister {
-	PortRegisterPullMode = 28,
-	PortRegisterMultiDriving = 20,
-	PortRegisterData = 16,
-	PortRegisterConfiguration = 0
-};
-
-enum Pins {
-	CON3_P03 = 149, PB21 = 149,
-	CON3_P05 = 148, PB20 = 148,
-	CON3_P07 = 1027, PI03 = 1027,
-	CON3_P08 = 896, PH00 = 896,
-	CON3_P10 = 897, PH01 = 897,
-	CON3_P11 = 1043, PI19 = 1043,
-	CON3_P12 = 898, PH02 = 898,
-	CON3_P13 = 1042, PI18 = 1042,
-	CON3_P15 = 1041, PI17 = 1041,
-	CON3_P16 = 916, PH20 = 916,
-	CON3_P18 = 917, PH21 = 917,
-	CON3_P19 = 1036, PI12 = 1036,
-	CON3_P21 = 1037, PI13 = 1037,
-	CON3_P22 = 1040, PI16 = 1040,
-	CON3_P23 = 1035, PI11 = 1035,
-	CON3_P24 = 1034, PI10 = 1034,
-	CON3_P26 = 1038, PI14 = 1038
-};
-
-struct Register {
-	// global settings
-	enum PortRegister PortRegister;
-	int PinsPerPort;
-	//int BitsPerRegister;
-	int PinsPerRegister;
-	int BitsPerPin;
-};
 
 volatile uint32_t *mappedMemory;
+
+void Initialize() {
+	mappedMemory = openMemory();
+}
 
 volatile uint32_t *openMemory() {
 	int fileDescriptor;
@@ -138,6 +97,22 @@ int ReadPinValue(enum Pins pin) {
 	return pinValue;
 }
 
+int digitalRead(enum Pins pin)
+{
+	return ReadPinValue(pin);
+}
+
+void digitalWrite(enum Pins pin, int value)
+{
+	WritePinValue(pin, value);
+}
+
+void WritePinValue(enum Pins pin, int value) {
+	struct Register *configurationRegister = newRegister(PortRegisterData, 32, 1, 1);
+	WriteRegister(configurationRegister, pin, 1, value);
+	free(configurationRegister);
+}
+
 void ConfigurePinDirection(enum Pins pin, enum PinDirection pinDirection) {
 	struct Register *configurationRegister = newRegister(PortRegisterConfiguration, 32, 4, 4);
 	WriteRegister(configurationRegister, pin, 0b111, pinDirection);
@@ -150,7 +125,36 @@ void ConfigurePinPullMode(enum Pins pin, enum PinPullMode pullMode) {
 	free(configurationRegister);
 }
 
+struct InOut *newInputOutput(enum Pins pin, enum PinDirection pinDirection, enum PinPullMode pullMode) {
+
+	struct InOut *result;
+	if ((result = malloc(sizeof (struct InOut))) == NULL) {
+		return NULL;
+	}
+
+	ConfigurePinDirection(pin, pinDirection);
+	ConfigurePinPullMode(pin, pullMode);
+
+	result->Direction = pinDirection;
+	result->Pin = pin;
+	result->value = ReadPinValue(pin);
+
+	return result;
+
+}
+
+struct InOut *newInput(enum Pins pin, enum PinPullMode pullMode) {
+	return newInputOutput(pin, PinDirectionInput, pullMode);
+}
+
+struct InOut *newOutput(enum Pins pin) {
+	return newInputOutput(pin, PinDirectionOutput, PinPullModeNone);
+}
+
+
 void RegisterTest() {
+
+	int value;
 
 	mappedMemory = openMemory();
 	if (mappedMemory == NULL)
@@ -163,7 +167,25 @@ void RegisterTest() {
 	ConfigurePinDirection(PH20, PinDirectionInput);
 	ConfigurePinPullMode(PH20, PinPullModeUp);
 
-	int value;
+
+
+	ConfigurePinDirection(PIN23, PinDirectionOutput);
+	WritePinValue(PIN23, 0);
+	value = ReadPinValue(PIN23);
+	WritePinValue(PIN23, 1);
+	value = ReadPinValue(PIN23);
+	WritePinValue(PIN23, 0);
+	value = ReadPinValue(PIN23);
+
+	// onboard LED - first echo gpio > /sys/class/leds/green\:ph24\:led1/trigger
+	ConfigurePinDirection(PH24, PinDirectionOutput);
+	WritePinValue(PH24, 0);
+	value = ReadPinValue(PH24);
+	WritePinValue(PH24, 1);
+	value = ReadPinValue(PH24);
+	WritePinValue(PH24, 0);
+	value = ReadPinValue(PH24);
+
 
 	// should be 1
 	value = ReadPinValue(PH02);

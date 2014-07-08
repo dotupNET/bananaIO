@@ -8,11 +8,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/*
- * 
- */
-int main(int argc, char** argv) {
+#include "MCP23S17Example.h"
 
+
+int main(int argc, char** argv) {
+	Test();
+	return (EXIT_SUCCESS);
 	RegisterTest();
 	return (EXIT_SUCCESS);
 }
