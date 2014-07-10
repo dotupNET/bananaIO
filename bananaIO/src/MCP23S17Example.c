@@ -1,7 +1,9 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#include "src/bananaIO.h"
+#include "Gpio.h"
+#include "SocConfiguration.h"
+#include "SocFramework.h"
 
 #define		PIN_CLOCK		PIN12 // Serial-Clock
 #define		PIN_MOSI			PIN18 // Master-Out-Slave-In
@@ -81,14 +83,12 @@ void SpiConfigure(int address, enum PortDirection portDirection) {
 	SpiWrite(address, MCP23S17_REGISTER_PORT_A_DIRECTION, portDirection);
 }
 
-void Test() {
-
-	Initialize();
+void TestSpi() {
 		
-	newOutput(PIN_CLOCK);
-	newOutput(PIN_MOSI);
-	newOutput(PIN_MISO);
-	newOutput(PIN_CS);
+	NewOutput(PIN_CLOCK);
+	NewOutput(PIN_MOSI);
+	NewOutput(PIN_MISO);
+	NewOutput(PIN_CS);
 
 	SpiConfigure(0, PortDirectionOutput);
 

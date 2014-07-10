@@ -1,3 +1,4 @@
+/*
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -6,13 +7,8 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
+
 #include "bananaIO.h"
-
-#define		PAGESIZE					4096
-#define		GPIO_BASE				0x01C20800			// A20 User Manual 2013-03-22.pdf
-
-#define		BYTE_PER_REGISTER		4						// All register are 32 Bit
-#define		PORT_SIZE				36						// Number of rows per port to calculate with uint32_t pointer
 
 
 volatile uint32_t *mappedMemory;
@@ -28,17 +24,17 @@ volatile uint32_t *openMemory() {
 		return NULL;
 	}
 
-	uint32_t mask = (~(PAGESIZE - 1));
-	uint32_t offset = GPIO_BASE & mask;
-	uint32_t *map = mmap(0, PAGESIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fileDescriptor, offset);
+	uint32_t mask = (~(SOC_REGISTER_PAGE_SIZE - 1));
+	uint32_t offset = SOC_REGISTER_GPIO_BASEADDRESS & mask;
+	uint32_t *map = mmap(0, SOC_REGISTER_PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fileDescriptor, offset);
 
 	close(fileDescriptor);
 
-	return (volatile uint32_t *)map + ((GPIO_BASE & ~mask) / 4); // /4 = uint32_t pointer
+	return (volatile uint32_t *)map + ((SOC_REGISTER_GPIO_BASEADDRESS & ~mask) / 4); // /4 = uint32_t pointer
 
 }
 
-struct Register *newRegister(enum PortRegister portRegister, int bitsPerRegister, int bitsPerPin, int size) {
+struct Register *NewRegister(enum PortRegister portRegister, int bitsPerRegister, int bitsPerPin, int size) {
 
 	struct Register *result;
 
@@ -49,8 +45,8 @@ struct Register *newRegister(enum PortRegister portRegister, int bitsPerRegister
 	result->PortRegister = portRegister;
 	result->BitsPerPin = bitsPerPin;
 	//result->BitsPerRegister = bitsPerRegister;
-	result->PinsPerRegister = (BYTE_PER_REGISTER * 8) / result->BitsPerPin;
-	result->PinsPerPort = BYTE_PER_REGISTER * size * result->PinsPerRegister;
+	result->PinsPerRegister = (SOC_REGISTER_BYTE_PER_REGISTER * 8) / result->BitsPerPin;
+	result->PinsPerPort = SOC_REGISTER_BYTE_PER_REGISTER * size * result->PinsPerRegister;
 
 	return result;
 
@@ -59,7 +55,7 @@ struct Register *newRegister(enum PortRegister portRegister, int bitsPerRegister
 void WriteRegister(struct Register *reg, enum Pins pin, int resetMask, int value) {
 	int shift = (pin % reg->PinsPerRegister) * reg->BitsPerPin;
 	int port = pin / reg->PinsPerPort; // debug
-	int portOffset = port * (PORT_SIZE / BYTE_PER_REGISTER); // debug
+	int portOffset = port * (SOC_REGISTER_PORT_SIZE / SOC_REGISTER_BYTE_PER_REGISTER); // debug
 	int registerOffset = pin % reg->PinsPerPort / reg->PinsPerRegister; // debug
 	int offset = portOffset + (reg->PortRegister / 4) + registerOffset;
 
@@ -77,7 +73,7 @@ void WriteRegister(struct Register *reg, enum Pins pin, int resetMask, int value
 int ReadRegister(struct Register *reg, enum Pins pin) {
 	int shift = (pin % reg->PinsPerRegister) * reg->BitsPerPin;
 	int port = pin / reg->PinsPerPort; // debug
-	int portOffset = port * (PORT_SIZE / BYTE_PER_REGISTER); // debug
+	int portOffset = port * (SOC_REGISTER_PORT_SIZE / SOC_REGISTER_BYTE_PER_REGISTER); // debug
 	int registerOffset = pin % reg->PinsPerPort / reg->PinsPerRegister; // debug
 	int offset = portOffset + (reg->PortRegister / 4) + registerOffset;
 
@@ -113,9 +109,9 @@ void WritePinValue(enum Pins pin, int value) {
 	free(configurationRegister);
 }
 
-void ConfigurePinDirection(enum Pins pin, enum PinDirection pinDirection) {
-	struct Register *configurationRegister = newRegister(PortRegisterConfiguration, 32, 4, 4);
-	WriteRegister(configurationRegister, pin, 0b111, pinDirection);
+void ConfigurePinDirection(enum Pins pin, enum PinFunction pinFunction) {
+	struct Register *configurationRegister = newRegister(PortRegisterFunction, 32, 4, 4);
+	WriteRegister(configurationRegister, pin, 0b111, pinFunction);
 	free(configurationRegister);
 }
 
@@ -125,17 +121,17 @@ void ConfigurePinPullMode(enum Pins pin, enum PinPullMode pullMode) {
 	free(configurationRegister);
 }
 
-struct InOut *newInputOutput(enum Pins pin, enum PinDirection pinDirection, enum PinPullMode pullMode) {
+struct InOut *newInputOutput(enum Pins pin, enum PinFunction pinFunction, enum PinPullMode pullMode) {
 
 	struct InOut *result;
 	if ((result = malloc(sizeof (struct InOut))) == NULL) {
 		return NULL;
 	}
 
-	ConfigurePinDirection(pin, pinDirection);
+	ConfigurePinDirection(pin, pinFunction);
 	ConfigurePinPullMode(pin, pullMode);
 
-	result->Direction = pinDirection;
+	result->Function = pinFunction;
 	result->Pin = pin;
 	result->value = ReadPinValue(pin);
 
@@ -144,11 +140,11 @@ struct InOut *newInputOutput(enum Pins pin, enum PinDirection pinDirection, enum
 }
 
 struct InOut *newInput(enum Pins pin, enum PinPullMode pullMode) {
-	return newInputOutput(pin, PinDirectionInput, pullMode);
+	return newInputOutput(pin, PinFunctionInput, pullMode);
 }
 
 struct InOut *newOutput(enum Pins pin) {
-	return newInputOutput(pin, PinDirectionOutput, PinPullModeNone);
+	return newInputOutput(pin, PinFunctionOutput, PinPullModeNone);
 }
 
 
@@ -161,15 +157,14 @@ void RegisterTest() {
 		return;
 
 
-	ConfigurePinDirection(PH02, PinDirectionInput);
+	ConfigurePinDirection(PH02, PinFunctionInput);
 	ConfigurePinPullMode(PH02, PinPullModeUp);
 
-	ConfigurePinDirection(PH20, PinDirectionInput);
+	ConfigurePinDirection(PH20, PinFunctionInput);
 	ConfigurePinPullMode(PH20, PinPullModeUp);
 
 
-
-	ConfigurePinDirection(PIN23, PinDirectionOutput);
+	ConfigurePinDirection(PIN23, PinFunctionOutput);
 	WritePinValue(PIN23, 0);
 	value = ReadPinValue(PIN23);
 	WritePinValue(PIN23, 1);
@@ -178,13 +173,16 @@ void RegisterTest() {
 	value = ReadPinValue(PIN23);
 
 	// onboard LED - first echo gpio > /sys/class/leds/green\:ph24\:led1/trigger
-	ConfigurePinDirection(PH24, PinDirectionOutput);
+
+	ConfigurePinDirection(PH24, PinFunctionOutput);
 	WritePinValue(PH24, 0);
 	value = ReadPinValue(PH24);
 	WritePinValue(PH24, 1);
 	value = ReadPinValue(PH24);
 	WritePinValue(PH24, 0);
 	value = ReadPinValue(PH24);
+
+
 
 
 	// should be 1
@@ -205,6 +203,7 @@ void RegisterTest() {
 	value = ReadPinValue(PH02);
 	value = ReadPinValue(PH20);
 
+
 }
 
 /*
@@ -214,5 +213,4 @@ int main(int argc, char **argv) {
 	
 }
  */
-
 
