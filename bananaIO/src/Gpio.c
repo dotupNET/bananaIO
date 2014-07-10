@@ -43,9 +43,9 @@ int ReadPinValue(int pin) {
 
 void WritePinValue(int pin, int value) {
 	if(value == LOW)
-		WriteRegister(CurrentSoc.Register.GpioClear, pin, 1, GPIO_PIN_CLEAR_VALUE);
+		WriteRegister(CurrentSoc.Register.GpioClear, pin, GPIO_PIN_CLEAR_MASK, GPIO_PIN_CLEAR_VALUE);
 	else
-		WriteRegister(CurrentSoc.Register.GpioSet, pin, 1, GPIO_PIN_SET_VALUE);
+		WriteRegister(CurrentSoc.Register.GpioSet, pin, GPIO_PIN_SET_MASK, GPIO_PIN_SET_VALUE);
 }
 
 int digitalRead(int pin)

@@ -17,7 +17,10 @@
 extern "C" {
 #endif
 
+#define GPIO_PIN_CLEAR_MASK							0xFFFFFFFF
 #define GPIO_PIN_CLEAR_VALUE							1
+	
+#define GPIO_PIN_SET_MASK								0xFFFFFFFF
 #define GPIO_PIN_SET_VALUE								1
 
 #define SOC_REGISTER_PAGE_SIZE						4096

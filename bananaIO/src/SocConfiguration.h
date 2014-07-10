@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-#define BANANE 1
+//#define BANANE 1
 
 
 #ifdef	__cplusplus
