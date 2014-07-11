@@ -19,8 +19,6 @@ struct Register *NewRegister(volatile uint32_t *mappedMemory, int registerNumber
 	result->RegisterNumber = registerNumber;
 	result->BitsPerPin = bitsPerPin;
 	result->PinsPerRegister = (SOC_REGISTER_BYTE_PER_REGISTER * 8) / result->BitsPerPin;
-//	result->PinsPerPort = registerCount * result->PinsPerRegister;
-
 	result->mappedMemory = mappedMemory;
 
 	return result;
@@ -33,7 +31,7 @@ void WriteRegister(struct Register *reg, int pin, int resetMask, int value) {
 	int offset = GetPinRegisterOffset(reg, pin);
 	
 	if (resetMask == -1)
-		*(reg->mappedMemory + offset) = (value << shift); // just set value into address. Raspi Set Register!?
+		*(reg->mappedMemory + offset) = (value << shift); // just set value into address. Raspi Set Register fails on |= !?
 	else {
 		*(reg->mappedMemory + offset) &= ~(resetMask << shift); // mask
 		*(reg->mappedMemory + offset) |= (value << shift); // and set
@@ -65,15 +63,3 @@ int GetPinRegisterOffset(struct Register *reg, int pin) {
 	return offset / 4; // offset is in byte, we've uint32_t pointer
 
 }
-
-/*
-void SetRegisterBit(struct Register *reg, int pin) {
-	int shift = (pin % reg->PinsPerRegister) * reg->BitsPerPin;
-	int port = pin / reg->PinsPerPort; // debug
-	int portOffset = port * (SOC_REGISTER_PORT_SIZE / SOC_REGISTER_BYTE_PER_REGISTER); // debug
-	int registerOffset = pin % reg->PinsPerPort / reg->PinsPerRegister; // debug
-	int offset = portOffset + (reg->RegisterNumber / SOC_REGISTER_BLOCKSIZE) + registerOffset;
-
- *(reg->mappedMemory + offset) = (1 << shift);
-}
- */
