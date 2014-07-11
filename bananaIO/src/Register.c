@@ -5,9 +5,10 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
+#include "RegisterStruct.h"
 #include "Register.h"
 
-struct Register *NewRegister(volatile uint32_t *mappedMemory, int portRegister, int registerCount, int bitsPerPin) {
+struct Register *NewRegister(volatile uint32_t *mappedMemory, int registerNumber, int registerCount, int bitsPerPin) {
 
 	struct Register *result;
 
@@ -15,10 +16,10 @@ struct Register *NewRegister(volatile uint32_t *mappedMemory, int portRegister, 
 		return NULL;
 	}
 
-	result->PortRegister = portRegister;
+	result->RegisterNumber = registerNumber;
 	result->BitsPerPin = bitsPerPin;
 	result->PinsPerRegister = (SOC_REGISTER_BYTE_PER_REGISTER * 8) / result->BitsPerPin;
-	result->PinsPerPort = SOC_REGISTER_BLOCKSIZE * registerCount * result->PinsPerRegister;
+//	result->PinsPerPort = registerCount * result->PinsPerRegister;
 
 	result->mappedMemory = mappedMemory;
 
@@ -27,105 +28,52 @@ struct Register *NewRegister(volatile uint32_t *mappedMemory, int portRegister, 
 }
 
 void WriteRegister(struct Register *reg, int pin, int resetMask, int value) {
-	int shift = (pin % reg->PinsPerRegister) * reg->BitsPerPin;
-	int port = pin / reg->PinsPerPort; // debug
-	int portOffset = port * (SOC_REGISTER_PORT_SIZE / SOC_REGISTER_BYTE_PER_REGISTER); // debug
-	int registerOffset = pin % reg->PinsPerPort / reg->PinsPerRegister; // debug
-	int offset = portOffset + (reg->PortRegister / SOC_REGISTER_BLOCKSIZE) + registerOffset;
 
-	if (resetMask == -1)
-		*(reg->mappedMemory + offset) = (value << shift);			// just set value into address. Raspi Set Register!?
-	else
-	{
-		*(reg->mappedMemory + offset) &= ~(resetMask << shift);	// mask
-		*(reg->mappedMemory + offset) |= (value << shift);			// and set
-	}
+	int shift = GetPinRegisterShift(reg, pin);
+	int offset = GetPinRegisterOffset(reg, pin);
 	
+	if (resetMask == -1)
+		*(reg->mappedMemory + offset) = (value << shift); // just set value into address. Raspi Set Register!?
+	else {
+		*(reg->mappedMemory + offset) &= ~(resetMask << shift); // mask
+		*(reg->mappedMemory + offset) |= (value << shift); // and set
+	}
+
 }
 
+int ReadRegister(struct Register *reg, int pin) {
+
+	int shift = GetPinRegisterShift(reg, pin);
+	int offset = GetPinRegisterOffset(reg, pin);
+
+	int pinValue = (*(reg->mappedMemory + offset) & (1 << shift)) > 0;
+
+	return pinValue;
+}
+
+int GetPinRegisterShift(struct Register *reg, int pin) {
+	return (pin % reg->PinsPerRegister) * reg->BitsPerPin;
+}
+
+int GetPinRegisterOffset(struct Register *reg, int pin) {
+
+	int port = pin / SOC_REGISTER_PINS_PER_PORT;
+	int portOffset = port * SOC_REGISTER_PORT_SIZE;
+	int registerOffset = (pin - (SOC_REGISTER_PINS_PER_PORT * port)) / reg->PinsPerRegister * SOC_REGISTER_BYTE_PER_REGISTER;
+	int offset = portOffset + registerOffset + (reg->RegisterNumber*SOC_REGISTER_BYTE_PER_REGISTER);
+
+	return offset / 4; // offset is in byte, we've uint32_t pointer
+
+}
+
+/*
 void SetRegisterBit(struct Register *reg, int pin) {
 	int shift = (pin % reg->PinsPerRegister) * reg->BitsPerPin;
 	int port = pin / reg->PinsPerPort; // debug
 	int portOffset = port * (SOC_REGISTER_PORT_SIZE / SOC_REGISTER_BYTE_PER_REGISTER); // debug
 	int registerOffset = pin % reg->PinsPerPort / reg->PinsPerRegister; // debug
-	int offset = portOffset + (reg->PortRegister / SOC_REGISTER_BLOCKSIZE) + registerOffset;
+	int offset = portOffset + (reg->RegisterNumber / SOC_REGISTER_BLOCKSIZE) + registerOffset;
 
-	*(reg->mappedMemory + offset) = (1 << shift);
+ *(reg->mappedMemory + offset) = (1 << shift);
 }
-
-int ReadRegister(struct Register *reg, int pin) {
-	int shift = (pin % reg->PinsPerRegister) * reg->BitsPerPin;
-	int port = pin / reg->PinsPerPort; // debug
-	int portOffset = port * (SOC_REGISTER_PORT_SIZE / SOC_REGISTER_BYTE_PER_REGISTER); // debug
-	int registerOffset = pin % reg->PinsPerPort / reg->PinsPerRegister; // debug
-	int offset = portOffset + (reg->PortRegister / SOC_REGISTER_BLOCKSIZE) + registerOffset;
-
-	int pinValue;
-
-	pinValue = *(reg->mappedMemory + offset); // debug	
-	pinValue = (*(reg->mappedMemory + offset) & (1 << shift)) > 0;
-
-	return pinValue;
-
-}
-
-
-/*
-
-struct Register *NewRegister(volatile uint32_t *mappedMemory, int portRegister, int portOffset, int bytePerRegister, int bitsPerPin, int size) {
-
-	struct Register *result;
-
-	if ((result = malloc(sizeof (struct Register))) == NULL) {
-		return NULL;
-	}
-
-	result->PortOffset = portOffset;
-	result->PortRegister = portRegister;
-	result->BitsPerPin = bitsPerPin;
-	//result->BitsPerRegister = bitsPerRegister;
-	result->PinsPerRegister = (bytePerRegister * 8) / result->BitsPerPin;
-	result->PinsPerPort = bytePerRegister * size * result->PinsPerRegister;
-
-	result->mappedMemory = mappedMemory;
-	
-	return result;
-
-}
-
-void WriteRegister(struct Register *reg, int pin, int resetMask, int value) {
-	int shift = (pin % reg->PinsPerRegister) * reg->BitsPerPin;
-	int port = pin / reg->PinsPerPort; // debug
-	int portOffset = port * reg->PortOffset; // (SOC_REGISTER_PORT_SIZE / SOC_REGISTER_BYTE_PER_REGISTER); // debug
-	int registerOffset = pin % reg->PinsPerPort / reg->PinsPerRegister; // debug
-	int offset = portOffset + (reg->PortRegister / 4) + registerOffset;
-
-	int val;
-
-	val = *(reg->mappedMemory + offset); // debug
- *(reg->mappedMemory + offset) &= ~(resetMask << shift);
-	val = *(reg->mappedMemory + offset); // debug
- *(reg->mappedMemory + offset) |= (value << shift);
-	val = *(reg->mappedMemory + offset); // debug
-
-
-}
-
-int ReadRegister(struct Register *reg, int pin) {
-	int shift = (pin % reg->PinsPerRegister) * reg->BitsPerPin;
-	int port = pin / reg->PinsPerPort; // debug
-	int portOffset = port * reg->PortOffset; // (SOC_REGISTER_PORT_SIZE / SOC_REGISTER_BYTE_PER_REGISTER); // debug
-	int registerOffset = pin % reg->PinsPerPort / reg->PinsPerRegister; // debug
-	int offset = portOffset + (reg->PortRegister / 4) + registerOffset;
-
-	int pinValue;
-
-	pinValue = *(reg->mappedMemory + offset); // debug	
-	pinValue = (*(reg->mappedMemory + offset) & (1 << shift)) > 0;
-
-	return pinValue;
-
-}
- 
- * 
- *  */
+ */

@@ -7,6 +7,10 @@
 
 #include <stdlib.h>
 
+#include "SocConfiguration.h"
+#include "SocFramework.h"
+#include "RegisterStruct.h"
+#include "GpioStruct.h"
 
 #ifndef GPIO_H
 #define	GPIO_H
@@ -15,20 +19,12 @@
 extern "C" {
 #endif
 
-
-
-struct InOut {
-	int Pin;
-	int Function;
-	int value;
-};
-
 #define		HIGH						1
 #define		LOW						0
 
-struct InOut *NewInputOutput(int pin, int pinDirection, int pullMode);
-struct InOut *NewInput(int pin, int pullMode);
-struct InOut *NewOutput(int pin);
+struct GpioPin *NewInputOutput(int pin, int pinDirection, int pullMode);
+struct GpioPin *NewInput(int pin, int pullMode);
+struct GpioPin *NewOutput(int pin);
 
 void ConfigurePinDirection(int pin, int pinDirection);
 void ConfigurePinPullMode(int pin, int pullMode);

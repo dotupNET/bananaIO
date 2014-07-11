@@ -1,11 +1,9 @@
 #include "Gpio.h"
-#include "Register.h"
-#include "SocFramework.h"
 
-struct InOut *NewInputOutput(int pin, int pinFunction, int pullMode) {
+struct GpioPin *NewInputOutput(int pin, int pinFunction, int pullMode) {
 
-	struct InOut *result;
-	if ((result = malloc(sizeof (struct InOut))) == NULL) {
+	struct GpioPin *result;
+	if ((result = malloc(sizeof (struct GpioPin))) == NULL) {
 		return NULL;
 	}
 
@@ -20,11 +18,11 @@ struct InOut *NewInputOutput(int pin, int pinFunction, int pullMode) {
 
 }
 
-struct InOut *NewInput(int pin, int pullMode) {
+struct GpioPin *NewInput(int pin, int pullMode) {
 	return NewInputOutput(pin, PinFunctionInput, pullMode);
 }
 
-struct InOut *NewOutput(int pin) {
+struct GpioPin *NewOutput(int pin) {
 	return NewInputOutput(pin, PinFunctionOutput, PinPullModeNone);
 }
 

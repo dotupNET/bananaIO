@@ -45,9 +45,11 @@ void TestRaspberryPi()
 	
 	ConfigurePinDirection(PIN23, PinFunctionOutput);
 
+/*
 	SetRegisterBit(CurrentSoc.Register.GpioClear, PIN23);
 	SetRegisterBit(CurrentSoc.Register.GpioSet, PIN23);
 	SetRegisterBit(CurrentSoc.Register.GpioClear, PIN23);
+*/
 	WritePinValue(PIN23, 0);
 	value = ReadPinValue(PIN23);
 	WritePinValue(PIN23, 1);

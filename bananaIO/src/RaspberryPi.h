@@ -32,14 +32,13 @@ extern "C" {
 	// GPIO
 
 #define SOC_REGISTER_GPIO_COUNT						54
-#define SOC_REGISTER_GPIO_BASEADDRESS				0x7E200000 - (SOC_REGISTER_BUS_OFFSET) // /* GPIO register base */
+#define SOC_REGISTER_GPIO_BASEADDRESS				(0x7E200000 - (SOC_REGISTER_BUS_OFFSET)) // /* GPIO register base */
 
-#define SOC_REGISTER_BLOCKSIZE						1						// Each register has 1x 4 byte
 #define SOC_REGISTER_BYTE_PER_REGISTER				4						// All register are 32 Bit
-#define SOC_REGISTER_BITS_PER_REGISTER				(8 * SOC_REGISTER_BYTE_PER_REGISTER)
-#define SOC_REGISTER_PORT_SIZE						1						// Number of rows per port to calculate with uint32_t pointer
+#define SOC_REGISTER_PORT_SIZE						44						// Number of rows per port to calculate with uint32_t pointer
 
-	
+#define SOC_REGISTER_PINS_PER_PORT					54
+
 	enum PinPullMode {
 		PinPullModeNone = 0b00,
 		PinPullModeUp = 0b01,

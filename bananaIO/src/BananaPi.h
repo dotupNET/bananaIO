@@ -17,23 +17,25 @@
 extern "C" {
 #endif
 
+#define GPIO_PIN_CLEAR_MASK							0b1
 #define GPIO_PIN_CLEAR_VALUE							0
+
+#define GPIO_PIN_SET_MASK								0b1
 #define GPIO_PIN_SET_VALUE								1
 
 #define SOC_REGISTER_PAGE_SIZE						4096
-
+																
 #define SOC_REGISTER_PHYSICAL_BASEADDRESS			0x01C20800
-#define SOC_REGISTER_BUS_BASEADDRESS				0x01C20800
-#define SOC_REGISTER_BUS_OFFSET						(SOC_REGISTER_BUS_BASEADDRESS - SOC_REGISTER_PHYSICAL_BASEADDRESS) // 0x5E000000
 
 // GPIO	
 #define SOC_REGISTER_GPIO_COUNT						88
-#define SOC_REGISTER_GPIO_BASEADDRESS				(SOC_REGISTER_BUS_BASEADDRESS - (SOC_REGISTER_BUS_OFFSET)) // /* GPIO register base */
+#define SOC_REGISTER_GPIO_BASEADDRESS				(SOC_REGISTER_PHYSICAL_BASEADDRESS-0x800) // /* GPIO register base */
 
 #define SOC_REGISTER_BYTE_PER_REGISTER				4						// All register are 32 Bit
-#define SOC_REGISTER_BLOCKSIZE						4						// Each register has 4x 4 byte
 #define SOC_REGISTER_PORT_SIZE						36						// Number of rows per port to calculate with uint32_t pointer
 
+#define SOC_REGISTER_PINS_PER_PORT					32
+	
 enum PinPullMode {
 	PinPullModeNone = 0b00,
 	PinPullModeUp = 0b01,
@@ -46,12 +48,12 @@ enum PinFunction {
 };
 
 enum PortRegister {
-	PortRegisterPullMode = 28,
-	PortRegisterMultiDriving = 20,
-	PortRegisterData = 16,
-	PortRegisterGpioSet = 16,
-	PortRegisterGpioClear = 16,
-	PortRegisterGpioValue = 16,
+	PortRegisterPullMode = 7,
+	PortRegisterMultiDriving = 5,
+	PortRegisterData = 4,
+	PortRegisterGpioSet = 4,
+	PortRegisterGpioClear = 4,
+	PortRegisterGpioValue = 4,
 	PortRegisterFunction = 0
 };
 
@@ -74,7 +76,7 @@ enum Pins {
 	PIN24 = 1034, CON3_P24 = 1034, PI10 = 1034,
 	PIN26 = 1038, CON3_P26 = 1038, PI14 = 1038,
 
-	PH24 = 920
+	PH24 = 248
 
 };
 

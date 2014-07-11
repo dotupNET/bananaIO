@@ -9,6 +9,8 @@
 
 #include "SocConfiguration.h"
 #include "SocFramework.h"
+#include "RegisterStruct.h"
+#include "GpioStruct.h"
 
 #ifndef REGISTER_H
 #define	REGISTER_H
@@ -17,15 +19,6 @@
 extern "C" {
 #endif
 
-struct Register {
-	// global settings
-	volatile uint32_t *mappedMemory;
-	int PortRegister;
-	int PinsPerPort;
-	//int BitsPerRegister;
-	int PinsPerRegister;
-	int BitsPerPin;
-};
 
 struct Register *NewRegister(volatile uint32_t *mappedMemory, int portRegister, int portCount, int bitsPerPin);
 
@@ -33,7 +26,8 @@ struct Register *NewRegister(volatile uint32_t *mappedMemory, int portRegister, 
 void WriteRegister(struct Register *reg, int, int resetMask, int value);
 int ReadRegister(struct Register *reg, int pin);
 
-void SetRegisterBit(struct Register *reg, int pin);
+int GetPinRegisterShift(struct Register *reg, int pin);
+int GetPinRegisterOffset(struct Register *reg, int pin);
 
 #ifdef	__cplusplus
 }
